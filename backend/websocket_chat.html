@@ -329,6 +329,11 @@
     </div>
 
     <script>
+        // API Configuration - Change this to match your backend URL
+        const API_BASE_URL = window.location.origin === 'file://' 
+            ? 'http://localhost:8000' 
+            : `${window.location.protocol}//${window.location.hostname}:8000`;
+        
         let currentUser = null;
         let selectedUserId = null;
         let ws = null;
@@ -345,7 +350,7 @@
             }
 
             try {
-                const response = await fetch('http://localhost:8000/auth/login', {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -354,16 +359,21 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    alert('Login failed: ' + data.detail);
+                    alert('Login failed: ' + (data.detail || 'Unknown error'));
                     return;
                 }
 
                 currentUser = { token: data.access_token };
 
                 // Get current user info
-                const meResponse = await fetch('http://localhost:8000/users/me', {
+                const meResponse = await fetch(`${API_BASE_URL}/users/me`, {
                     headers: { 'Authorization': `Bearer ${data.access_token}` }
                 });
+                
+                if (!meResponse.ok) {
+                    throw new Error('Failed to get user info');
+                }
+                
                 const meData = await meResponse.json();
                 currentUser.id = meData.id;
                 currentUser.username = meData.username;
@@ -380,55 +390,32 @@
 
             } catch (error) {
                 alert('Error: ' + error.message);
+                console.error('Login error:', error);
             }
         }
 
         // Load all users
         async function loadUsers() {
             try {
-                // Fetch all users from the database
-                // Since there's no /users/list endpoint, we'll fetch from /users/me first to get current user
-                const meResponse = await fetch('http://localhost:8000/users/me', {
+                const response = await fetch(`${API_BASE_URL}/users/list/all`, {
                     headers: { 'Authorization': `Bearer ${currentUser.token}` }
                 });
 
-                if (!meResponse.ok) return;
-
-                // For now, create a simple list. In production, you'd want a /users endpoint
-                // We'll try to query users by ID to see who's available
-                allUsers = [];
-                
-                // Try to fetch users 1-50 to see who exists (in production, use a proper list endpoint)
-                for (let i = 1; i <= 50; i++) {
-                    if (i === currentUser.id) continue; // Skip current user
-                    
-                    try {
-                        const response = await fetch(`http://localhost:8000/users/${i}`, {
-                            headers: { 'Authorization': `Bearer ${currentUser.token}` }
-                        });
-                        
-                        if (response.ok) {
-                            const user = await response.json();
-                            allUsers.push(user);
-                        }
-                    } catch (error) {
-                        // User doesn't exist, skip
-                    }
+                if (!response.ok) {
+                    console.error('Failed to load users:', response.statusText);
+                    // Fallback to empty list
+                    allUsers = [];
+                    renderUsersList();
+                    return;
                 }
 
-                // If no users found, add some mock users for testing
-                if (allUsers.length === 0) {
-                    allUsers = [
-                        { id: 1, username: 'testuser1' },
-                        { id: 2, username: 'testuser2' },
-                        { id: 3, username: 'testuser3' },
-                        { id: 4, username: 'testuser4' }
-                    ].filter(u => u.id !== currentUser.id);
-                }
-
+                allUsers = await response.json();
                 renderUsersList();
+                
             } catch (error) {
                 console.error('Error loading users:', error);
+                allUsers = [];
+                renderUsersList();
             }
         }
 
@@ -456,12 +443,21 @@
             document.querySelectorAll('.user-item').forEach(item => {
                 item.classList.remove('active');
             });
-            event.target.classList.add('active');
+            
+            // Add active class to the clicked element
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
 
             document.getElementById('chatHeader').style.display = 'flex';
             document.getElementById('chatWith').textContent = `💬 Chatting with ${user.username}`;
             document.getElementById('inputSection').style.display = 'flex';
             document.getElementById('messagesContainer').innerHTML = '';
+
+            // Disconnect previous WebSocket connection if exists
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
 
             // Connect WebSocket
             connectWebSocket(user);
@@ -470,8 +466,12 @@
         // Connect to WebSocket
         function connectWebSocket(user) {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const uri = `${protocol}//localhost:8000/ws/chat/${selectedUserId}?token=${currentUser.token}`;
+            const wsHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? 'localhost:8000' 
+                : `${window.location.hostname}:8000`;
+            const uri = `${protocol}//${wsHost}/ws/chat/${selectedUserId}?token=${currentUser.token}`;
 
+            console.log('Connecting to WebSocket:', uri);
             ws = new WebSocket(uri);
 
             ws.onopen = () => {
@@ -483,14 +483,19 @@
             };
 
             ws.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                console.log('Received message:', message);
-                displayMessage(message);
+                try {
+                    const message = JSON.parse(event.data);
+                    console.log('Received message:', message);
+                    displayMessage(message);
+                } catch (error) {
+                    console.error('Error parsing message:', error);
+                }
             };
 
             ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
                 document.getElementById('onlineIndicator').classList.remove('online');
+                alert('WebSocket connection error. Please try again.');
             };
 
             ws.onclose = () => {
@@ -502,11 +507,14 @@
         // Load message history from database
         async function loadMessageHistory(userId) {
             try {
-                const response = await fetch(`http://localhost:8000/messages/conversation/${userId}`, {
+                const response = await fetch(`${API_BASE_URL}/messages/conversation/${userId}`, {
                     headers: { 'Authorization': `Bearer ${currentUser.token}` }
                 });
 
-                if (!response.ok) return;
+                if (!response.ok) {
+                    console.error('Failed to load message history');
+                    return;
+                }
 
                 const messages = await response.json();
                 const messagesContainer = document.getElementById('messagesContainer');
@@ -545,12 +553,22 @@
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
 
-            if (!message || !ws || ws.readyState !== WebSocket.OPEN) {
+            if (!message) {
                 return;
             }
 
-            ws.send(JSON.stringify({ content: message }));
-            input.value = '';
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('WebSocket is not connected. Please select a user to chat with.');
+                return;
+            }
+
+            try {
+                ws.send(JSON.stringify({ content: message }));
+                input.value = '';
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('Failed to send message. Please try again.');
+            }
         }
 
         // Handle Enter key

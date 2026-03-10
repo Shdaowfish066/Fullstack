@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
+import os
 
 from app.database import Base, engine
 from app import models
@@ -12,10 +13,10 @@ from app.routers import (
     votes_router_arpon,
     votes_router_emon,
     comments_router,
-    comments_router_emon,
+    comments_updates_router,
     messages_router,
     files_router,
-    moderation_router,
+    reports_router,
     communities_router,
 )
 from app.routers.websocket import router as websocket_router
@@ -47,15 +48,23 @@ async def validation_exception_handler(request: Request, exc: ValidationError):
         content={"detail": "Validation error"}
     )
 
+@app.get("/")
+async def root():
+    """Serve the chat HTML file"""
+    html_path = os.path.join(os.path.dirname(__file__), "..", "websocket_chat.html")
+    if os.path.exists(html_path):
+        return FileResponse(html_path, media_type="text/html")
+    return {"message": "WebSocket Chat - Open your browser to http://localhost:8000"}
+
 app.include_router(auth_router)
 app.include_router(posts_router)
 app.include_router(users_router)
 app.include_router(votes_router_arpon)
 app.include_router(votes_router_emon)
 app.include_router(comments_router)
-app.include_router(comments_router_emon)
+app.include_router(comments_updates_router)
 app.include_router(messages_router)
 app.include_router(files_router)
-app.include_router(moderation_router)
+app.include_router(reports_router)
 app.include_router(communities_router)
 app.include_router(websocket_router)

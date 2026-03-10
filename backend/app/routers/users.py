@@ -14,6 +14,15 @@ def read_me(
 ):
     return current_user
 
+@router.get("/list/all", response_model=list[UserOut])
+def list_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get list of all users excluding the current user"""
+    users = db.query(User).filter(User.id != current_user.id).all()
+    return users
+
 @router.get("/{user_id}", response_model=UserOut)
 def read_user(
     user_id: int,
