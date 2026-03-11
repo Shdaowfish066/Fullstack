@@ -137,8 +137,8 @@ Backend: `app/routers/websocket.py` → Frontend: `frontend/app/services/websock
 app.include_router(auth_router)           # ✅ /auth
 app.include_router(posts_router)          # ✅ /posts
 app.include_router(users_router)          # ✅ /users
-app.include_router(votes_router_arpon)    # ✅ /votes (posts)
-app.include_router(votes_router_emon)     # ✅ /votes (comments)
+app.include_router(post_votes_router)     # ✅ /votes (posts)
+app.include_router(comment_votes_router)  # ✅ /votes (comments)
 app.include_router(comments_router)       # ✅ /comments
 app.include_router(comments_updates_router) # ✅ /comments (updates)
 app.include_router(messages_router)       # ✅ /messages

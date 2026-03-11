@@ -3,9 +3,9 @@ from app.routers.users import router as users_router
 from app.routers.reports import router as reports_router
 
 from app.routers.posts import router as posts_router
-from app.routers.votes import router as votes_router_arpon
+from app.routers.votes import router as post_votes_router
 
-from app.routers.comment_votes import router as votes_router_emon
+from app.routers.comment_votes import router as comment_votes_router
 from app.routers.comment_routes import router as comments_router
 from app.routers.comment_updates import router as comments_updates_router
 
@@ -18,8 +18,8 @@ __all__ = [
     "posts_router",
     "users_router",
     "reports_router",
-    "votes_router_arpon",
-    "votes_router_emon",
+    "post_votes_router",
+    "comment_votes_router",
     "comments_router",
     "comments_updates_router",
     "messages_router",

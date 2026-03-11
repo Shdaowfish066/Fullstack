@@ -11,8 +11,8 @@ from app.routers import (
     auth_router,
     posts_router,
     users_router,
-    votes_router_arpon,
-    votes_router_emon,
+    post_votes_router,
+    comment_votes_router,
     comments_router,
     comments_updates_router,
     messages_router,
@@ -64,8 +64,8 @@ async def root():
 app.include_router(auth_router)
 app.include_router(posts_router)
 app.include_router(users_router)
-app.include_router(votes_router_arpon)
-app.include_router(votes_router_emon)
+app.include_router(post_votes_router)
+app.include_router(comment_votes_router)
 app.include_router(comments_router)
 app.include_router(comments_updates_router)
 app.include_router(messages_router)
