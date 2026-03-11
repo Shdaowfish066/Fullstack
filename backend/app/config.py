@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import AliasChoices, Field
 
 class Settings(BaseSettings):
 	model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -7,7 +7,7 @@ class Settings(BaseSettings):
 	app_name: str = Field(default="User Management API")
 	debug: bool = Field(default=True)
 
-	database_url: str | None = None
+	database_url: str | None = Field(default=None, validation_alias=AliasChoices("DATABASE_URL", "database_url"))
 
 	jwt_secret_key: str = Field(default="changeme", alias="JWT_SECRET_KEY")
 	jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
@@ -16,7 +16,10 @@ class Settings(BaseSettings):
 
 	imagekit_public_key: str | None = Field(default=None, alias="IMAGEKIT_PUBLIC_KEY")
 	imagekit_private_key: str | None = Field(default=None, alias="IMAGEKIT_PRIVATE_KEY")
-	imagekit_url_endpoint: str | None = Field(default=None, alias="IMAGEKIT_URL_ENDPOINT")
+	imagekit_url_endpoint: str | None = Field(
+		default=None,
+		validation_alias=AliasChoices("IMAGEKIT_URL_ENDPOINT", "IMAGEKIT_URL"),
+	)
 	imagekit_folder: str = Field(default="/uploads", alias="IMAGEKIT_FOLDER")
 
 settings = Settings()

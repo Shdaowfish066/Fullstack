@@ -6,7 +6,7 @@ from app.models.file import File
 from app.models.user import User
 from app.routers.auth import get_current_user
 from app.schemas.file import FileOut
-from app.utils.storage import delete_local_file_if_exists, is_allowed_media, save_upload_file
+from app.utils.storage import delete_imagekit_file, delete_local_file_if_exists, is_allowed_media, save_upload_file
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -31,7 +31,7 @@ def upload_file(
         )
 
     try:
-        file_path, file_size = save_upload_file(file)
+        stored_file = save_upload_file(file)
     except RuntimeError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -40,8 +40,11 @@ def upload_file(
 
     new_file = File(
         filename=file.filename,
-        file_path=file_path,
-        file_size=file_size,
+        file_path=stored_file.file_path,
+        file_url=stored_file.file_url,
+        file_size=stored_file.file_size,
+        storage_provider=stored_file.storage_provider,
+        storage_asset_id=stored_file.storage_asset_id,
         uploader_id=current_user.id,
         post_id=post_id,
         message_id=message_id
@@ -90,8 +93,16 @@ def delete_file(
             detail="Not authorized to delete this file"
         )
 
-    if not str(file.file_path).startswith(("http://", "https://")):
-        delete_local_file_if_exists(str(file.file_path))
+    try:
+        if file.storage_provider == "imagekit" and file.storage_asset_id:
+            delete_imagekit_file(file.storage_asset_id)
+        elif file.storage_provider == "local":
+            delete_local_file_if_exists(str(file.file_path))
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"File delete failed: {exc}"
+        ) from exc
 
     db.delete(file)
     db.commit()
