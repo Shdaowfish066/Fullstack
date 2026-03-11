@@ -33,6 +33,8 @@ ALLOWED_MEDIA_EXTENSIONS = {
 	".mov",
 }
 
+UPLOAD_DIR = Path(__file__).resolve().parents[2] / "uploads"
+
 def is_allowed_media(upload_file: UploadFile) -> bool:
 	if not upload_file.filename or not upload_file.content_type:
 		return False
@@ -42,14 +44,15 @@ def is_allowed_media(upload_file: UploadFile) -> bool:
 		and ext in ALLOWED_MEDIA_EXTENSIONS
 	)
 
-def save_upload_file(upload_file: UploadFile, upload_dir: str = "uploads") -> tuple[str, int]:
-	os.makedirs(upload_dir, exist_ok=True)
+def save_upload_file(upload_file: UploadFile, upload_dir: Path = UPLOAD_DIR) -> tuple[str, int]:
+	upload_dir.mkdir(parents=True, exist_ok=True)
 	ext = Path(upload_file.filename).suffix.lower()
 	stored_name = f"{uuid.uuid4().hex}{ext}"
-	file_path = os.path.join(upload_dir, stored_name)
+	absolute_file_path = upload_dir / stored_name
 
-	with open(file_path, "wb") as buffer:
+	with open(absolute_file_path, "wb") as buffer:
 		shutil.copyfileobj(upload_file.file, buffer)
 
-	file_size = os.path.getsize(file_path)
-	return file_path, file_size
+	file_size = absolute_file_path.stat().st_size
+	public_file_path = f"uploads/{stored_name}"
+	return public_file_path, file_size

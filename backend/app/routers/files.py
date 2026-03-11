@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File as FastAPIFile
 from sqlalchemy.orm import Session
 
@@ -6,7 +8,7 @@ from app.models.file import File
 from app.models.user import User
 from app.routers.auth import get_current_user
 from app.schemas.file import FileOut
-from app.utils.storage import is_allowed_media, save_upload_file
+from app.utils.storage import UPLOAD_DIR, is_allowed_media, save_upload_file
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -83,6 +85,11 @@ def delete_file(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this file"
         )
+
+    relative_path = str(file.file_path).replace('\\', '/')
+    absolute_path = UPLOAD_DIR / Path(relative_path).name
+    if absolute_path.exists():
+        absolute_path.unlink()
 
     db.delete(file)
     db.commit()
