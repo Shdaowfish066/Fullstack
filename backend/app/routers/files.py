@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File as FastAPIFile
 from sqlalchemy.orm import Session
 
@@ -8,7 +6,7 @@ from app.models.file import File
 from app.models.user import User
 from app.routers.auth import get_current_user
 from app.schemas.file import FileOut
-from app.utils.storage import UPLOAD_DIR, is_allowed_media, save_upload_file
+from app.utils.storage import delete_local_file_if_exists, is_allowed_media, save_upload_file
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -32,7 +30,13 @@ def upload_file(
             detail="Only images, gifs, and videos are allowed"
         )
 
-    file_path, file_size = save_upload_file(file)
+    try:
+        file_path, file_size = save_upload_file(file)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"File upload failed: {exc}"
+        ) from exc
 
     new_file = File(
         filename=file.filename,
@@ -86,10 +90,8 @@ def delete_file(
             detail="Not authorized to delete this file"
         )
 
-    relative_path = str(file.file_path).replace('\\', '/')
-    absolute_path = UPLOAD_DIR / Path(relative_path).name
-    if absolute_path.exists():
-        absolute_path.unlink()
+    if not str(file.file_path).startswith(("http://", "https://")):
+        delete_local_file_if_exists(str(file.file_path))
 
     db.delete(file)
     db.commit()
