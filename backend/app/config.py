@@ -4,7 +4,7 @@ from pydantic import AliasChoices, Field
 class Settings(BaseSettings):
 	model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-	app_name: str = Field(default="User Management API")
+	app_name: str = Field(default="Nebula")
 	debug: bool = Field(default=True)
 
 	database_url: str | None = Field(default=None, validation_alias=AliasChoices("DATABASE_URL", "database_url"))
