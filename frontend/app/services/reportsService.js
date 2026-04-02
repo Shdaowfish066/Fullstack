@@ -12,6 +12,11 @@ export const reportsService = {
     return normalizeReport(unwrapResponse(response));
   },
 
+  getMyReports: async () => {
+    const response = await apiClient.get('/reports/mine');
+    return Array.isArray(response) ? response.map(normalizeReport) : [];
+  },
+
   getReports: async (statusFilter = '') => {
     const suffix = statusFilter ? `?status_filter=${encodeURIComponent(statusFilter)}` : '';
     const response = await apiClient.get(`/reports${suffix}`);
@@ -24,7 +29,7 @@ export const reportsService = {
   },
 
   reviewReport: async (reportId, status) => {
-    const response = await apiClient.put(`/reports/${reportId}/review?new_status=${encodeURIComponent(status)}`, {});
+    const response = await apiClient.put(`/reports/${reportId}/review`, { status });
     return normalizeReport(unwrapResponse(response));
   },
 

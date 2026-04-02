@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { AlertTriangle, MessageSquare, PencilLine, Save, SendHorizontal, Trash2 } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useToast } from '../store/ToastContext';
 import {
@@ -31,6 +32,8 @@ export default function SinglePostPage() {
   const [postForm, setPostForm] = useState({ title: '', content: '' });
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editingCommentText, setEditingCommentText] = useState('');
+
+  const applyVoteDelta = (score, currentVote, nextVote) => (score ?? 0) + (nextVote - currentVote);
 
   useEffect(() => {
     const loadPost = async () => {
@@ -76,13 +79,23 @@ export default function SinglePostPage() {
   const canManagePost = myPostIds.includes(Number(id));
 
   const handlePostVote = async (direction) => {
+    const currentVote = postVote;
+    const nextVote = currentVote === direction ? 0 : direction;
+
+    setPostVote(nextVote);
+    setPost(prev => ({
+      ...prev,
+      score: applyVoteDelta(prev?.score, currentVote, nextVote),
+    }));
+
     try {
-      const nextVote = postVote === direction ? 0 : direction;
       await votesService.voteOnPost(id, nextVote);
-      const score = await votesService.getPostScore(id);
-      setPostVote(nextVote);
-      setPost(prev => ({ ...prev, score: score.score ?? prev.score ?? 0 }));
     } catch (error) {
+      setPostVote(currentVote);
+      setPost(prev => ({
+        ...prev,
+        score: applyVoteDelta(prev?.score, nextVote, currentVote),
+      }));
       showError(error.message || 'Failed to vote on post');
     }
   };
@@ -139,17 +152,25 @@ export default function SinglePostPage() {
   };
 
   const handleCommentVote = async (commentId, direction) => {
-    try {
-      const currentVote = commentVotes[commentId] || 0;
-      const nextVote = currentVote === direction ? 0 : direction;
-      await votesService.voteOnComment(commentId, nextVote);
-      const score = await votesService.getCommentScore(commentId);
+    const currentVote = commentVotes[commentId] || 0;
+    const nextVote = currentVote === direction ? 0 : direction;
 
-      setCommentVotes(prev => ({ ...prev, [commentId]: nextVote }));
-      setComments(prev => prev.map(comment => (
-        comment.id === commentId ? { ...comment, votes: score.score ?? comment.votes ?? 0 } : comment
-      )));
+    setCommentVotes(prev => ({ ...prev, [commentId]: nextVote }));
+    setComments(prev => prev.map(comment => (
+      comment.id === commentId
+        ? { ...comment, votes: applyVoteDelta(comment.votes, currentVote, nextVote) }
+        : comment
+    )));
+
+    try {
+      await votesService.voteOnComment(commentId, nextVote);
     } catch (error) {
+      setCommentVotes(prev => ({ ...prev, [commentId]: currentVote }));
+      setComments(prev => prev.map(comment => (
+        comment.id === commentId
+          ? { ...comment, votes: applyVoteDelta(comment.votes, nextVote, currentVote) }
+          : comment
+      )));
       showError(error.message || 'Failed to vote on comment');
     }
   };
@@ -206,35 +227,43 @@ export default function SinglePostPage() {
   };
 
   if (!currentUser) {
-    return <div style={{ padding: '24px', color: '#F1F5F9' }}>Please log in to view posts</div>;
+    return <div className="page-shell"><div className="panel panel-empty">Please log in to view posts.</div></div>;
   }
 
-  if (loading) return <div style={{ padding: '24px', color: '#64748B' }}>Loading...</div>;
-  if (!post) return <div style={{ padding: '24px', color: '#F1F5F9' }}>Post not found</div>;
+  if (loading) return <div className="page-shell"><div className="panel panel-empty">Loading post...</div></div>;
+  if (!post) return <div className="page-shell"><div className="panel panel-empty">Post not found.</div></div>;
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px' }}>
-      <div style={{ background: '#1A1D27', borderRadius: '8px', padding: '24px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
+    <div className="page-shell single-post-shell">
+      <section className="panel page-hero single-post-hero">
+        <span className="dashboard-badge">
+          <MessageSquare size={14} />
+          Post detail
+        </span>
+        <h1>{post.title}</h1>
+        <p>Read the full thread, manage your post, and keep the conversation moving without the old crowded layout.</p>
+      </section>
+
+      <section className="panel single-post-card">
         {editingPost ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+          <div className="single-post-editor">
             <input
               value={postForm.title}
               onChange={e => setPostForm(prev => ({ ...prev, title: e.target.value }))}
-              style={{ width: '100%', padding: '12px 16px', background: '#252D3D', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#F1F5F9' }}
+              className="search-input"
             />
             <textarea
               value={postForm.content}
               onChange={e => setPostForm(prev => ({ ...prev, content: e.target.value }))}
-              style={{ width: '100%', minHeight: 140, padding: '12px 16px', background: '#252D3D', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#F1F5F9', fontFamily: 'inherit' }}
+              className="search-input single-post-editor__textarea"
             />
           </div>
         ) : (
           <>
-            <h1 style={{ color: '#F1F5F9', marginBottom: '16px' }}>{post.title}</h1>
-            <div style={{ color: '#94A3B8', marginBottom: '16px' }}>{post.content}</div>
+            <div className="single-post-content">{post.content}</div>
           </>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+        <div className="single-post-toolbar">
           <VoteScore
             votes={post.score || 0}
             userVote={postVote}
@@ -242,39 +271,31 @@ export default function SinglePostPage() {
             onDownvote={() => handlePostVote(-1)}
           />
           {canManagePost ? (
-            <>
-              <button
-                onClick={() => setEditingPost(prev => !prev)}
-                style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: '#F1F5F9', cursor: 'pointer' }}
-              >
+            <div className="single-post-toolbar__actions">
+              <button className="app-button app-button--ghost" onClick={() => setEditingPost(prev => !prev)}>
+                <PencilLine size={16} />
                 {editingPost ? 'Cancel Edit' : 'Edit Post'}
               </button>
               {editingPost && (
-                <button
-                  onClick={handleUpdatePost}
-                  style={{ padding: '8px 12px', borderRadius: 6, border: 'none', background: '#6C63FF', color: 'white', cursor: 'pointer' }}
-                >
+                <button className="app-button app-button--primary" onClick={handleUpdatePost}>
+                  <Save size={16} />
                   Save Changes
                 </button>
               )}
-              <button
-                onClick={handleDeletePost}
-                style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid rgba(239,68,68,0.4)', background: 'transparent', color: '#EF4444', cursor: 'pointer' }}
-              >
+              <button className="app-button app-button--danger" onClick={handleDeletePost}>
+                <Trash2 size={16} />
                 Delete Post
               </button>
-            </>
+            </div>
           ) : (
-            <button
-              onClick={handleReportPost}
-              style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: '#F1F5F9', cursor: 'pointer' }}
-            >
+            <button className="app-button app-button--ghost" onClick={handleReportPost}>
+              <AlertTriangle size={16} />
               Report Post
             </button>
           )}
         </div>
         {post.files?.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+          <div className="profile-files-wrap">
             {post.files.map(file => (
               <FileChip
                 key={file.id}
@@ -284,80 +305,73 @@ export default function SinglePostPage() {
             ))}
           </div>
         )}
-        <div style={{ fontSize: '12px', color: '#64748B' }}>
+        <div className="single-post-meta">
           By {post.isAnonymous ? 'Anonymous' : (
             <button
               onClick={() => navigate(`/app/u/${encodeURIComponent(post.authorName)}`)}
-              style={{ background: 'transparent', border: 'none', padding: 0, color: '#94A3B8', cursor: 'pointer' }}
+              className="community-link-button"
             >
               {post.authorName}
             </button>
           )} • {new Date(post.createdAt).toLocaleDateString()} • {post.score || 0} votes
         </div>
-      </div>
+      </section>
 
-      <div style={{ background: '#1A1D27', borderRadius: '8px', padding: '24px', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <h2 style={{ color: '#F1F5F9', marginBottom: '16px' }}>Comments ({comments.length})</h2>
+      <section className="panel single-post-comments">
+        <div className="panel-header">
+          <div>
+            <h2>Comments ({comments.length})</h2>
+            <p>Join the discussion below.</p>
+          </div>
+        </div>
 
-        <div style={{ marginBottom: '24px' }}>
+        <form className="single-post-comment-form" onSubmit={handlePostComment}>
           <textarea
             value={commentText}
             onChange={e => setCommentText(e.target.value)}
             placeholder="Add a comment..."
-            style={{
-              width: '100%', padding: '12px 16px', background: '#252D3D',
-              border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-              color: '#F1F5F9', fontSize: '14px', minHeight: '100px', fontFamily: 'inherit',
-            }}
+            className="search-input single-post-editor__textarea"
           />
-          <button
-            onClick={handlePostComment}
-            disabled={submittingComment}
-            style={{
-              marginTop: '12px', padding: '8px 16px', background: '#6C63FF',
-              border: 'none', borderRadius: '6px', color: 'white', fontWeight: 600, 
-              cursor: submittingComment ? 'not-allowed' : 'pointer',
-              opacity: submittingComment ? 0.7 : 1,
-            }}
-          >
+          <button className="app-button app-button--primary" type="submit" disabled={submittingComment}>
+            <SendHorizontal size={16} />
             {submittingComment ? 'Posting...' : 'Post Comment'}
           </button>
-        </div>
+        </form>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="single-post-comment-list">
           {comments.map(comment => (
-            <div key={comment.id} style={{ padding: '16px', background: '#252D3D', borderRadius: '6px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ marginBottom: '4px' }}>
+            <article key={comment.id} className="single-post-comment-card">
+              <div className="single-post-comment-card__main">
+                <div>
+                  <div className="single-post-comment-card__author">
                     <button
                       onClick={() => navigate(`/app/u/${encodeURIComponent(comment.authorName)}`)}
-                      style={{ background: 'transparent', border: 'none', padding: 0, color: '#F1F5F9', fontWeight: 600, cursor: 'pointer' }}
+                      className="community-link-button"
                     >
                       {comment.authorName}
                     </button>
                   </div>
                   {editingCommentId === comment.id ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
+                    <div className="single-post-comment-card__editor">
                       <textarea
                         value={editingCommentText}
                         onChange={e => setEditingCommentText(e.target.value)}
-                        style={{ width: '100%', minHeight: 80, padding: '10px 12px', background: '#1A1D27', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#F1F5F9', fontFamily: 'inherit' }}
+                        className="search-input single-post-editor__textarea"
                       />
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => handleSaveComment(comment.id)} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: '#6C63FF', color: 'white', cursor: 'pointer' }}>Save</button>
-                        <button onClick={() => setEditingCommentId(null)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: '#F1F5F9', cursor: 'pointer' }}>Cancel</button>
+                      <div className="community-card__actions">
+                        <button className="app-button app-button--primary" onClick={() => handleSaveComment(comment.id)} type="button">Save</button>
+                        <button className="app-button app-button--ghost" onClick={() => setEditingCommentId(null)} type="button">Cancel</button>
                       </div>
                     </div>
                   ) : (
-                    <div style={{ color: '#94A3B8', marginBottom: '8px' }}>{comment.content}</div>
+                    <div className="single-post-comment-card__content">{comment.content}</div>
                   )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '12px', color: '#64748B' }}>
+                  <div className="single-post-comment-card__meta">
                     <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
                     <span>{comment.votes || 0} votes</span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                <div className="single-post-comment-card__actions">
                   <VoteScore
                     votes={comment.votes || 0}
                     userVote={commentVotes[comment.id] || 0}
@@ -368,18 +382,18 @@ export default function SinglePostPage() {
                   />
                   {comment.authorId === currentUser?.id ? (
                     <>
-                      <button onClick={() => handleStartEditComment(comment)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: '#F1F5F9', cursor: 'pointer' }}>Edit</button>
-                      <button onClick={() => handleDeleteComment(comment.id)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(239,68,68,0.4)', background: 'transparent', color: '#EF4444', cursor: 'pointer' }}>Delete</button>
+                      <button className="app-button app-button--ghost" onClick={() => handleStartEditComment(comment)} type="button">Edit</button>
+                      <button className="app-button app-button--danger" onClick={() => handleDeleteComment(comment.id)} type="button">Delete</button>
                     </>
                   ) : (
-                    <button onClick={() => handleReportComment(comment.id)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: '#F1F5F9', cursor: 'pointer' }}>Report</button>
+                    <button className="app-button app-button--ghost" onClick={() => handleReportComment(comment.id)} type="button">Report</button>
                   )}
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

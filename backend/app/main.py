@@ -8,6 +8,7 @@ import os
 from app.database import Base, engine
 from app import models
 from app.routers import (
+    admin_router,
     auth_router,
     posts_router,
     users_router,
@@ -62,6 +63,7 @@ async def root():
     return {"message": "WebSocket Chat - Open your browser to http://localhost:8000"}
 
 app.include_router(auth_router)
+app.include_router(admin_router)
 app.include_router(posts_router)
 app.include_router(users_router)
 app.include_router(post_votes_router)

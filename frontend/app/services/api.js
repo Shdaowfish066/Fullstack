@@ -184,6 +184,14 @@ export class ApiClient {
     });
   }
 
+  async patch(endpoint, data, options = {}) {
+    return this.request(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body: data instanceof FormData ? data : JSON.stringify(data ?? {}),
+    });
+  }
+
   async delete(endpoint, options = {}) {
     return this.request(endpoint, { ...options, method: 'DELETE' });
   }

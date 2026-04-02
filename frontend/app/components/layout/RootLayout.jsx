@@ -1,12 +1,14 @@
 import React, { useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
+import { Home, MessagesSquare, Shield, Users, UserCircle2, LogOut } from 'lucide-react';
 import { useApp } from '../../store/AppContext';
 import { authService } from '../../services';
+import { BrandMark } from './BrandMark';
 
 export function RootLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, setIsAuthenticated, setCurrentUser } = useApp();
+  const { currentUser, isAuthenticated, setIsAuthenticated, setCurrentUser } = useApp();
 
   // Redirect to auth if not authenticated
   useEffect(() => {
@@ -22,46 +24,58 @@ export function RootLayout() {
     navigate('/');
   };
 
-  const navLinkStyle = (path) => ({
-    color: location.pathname === path ? '#F1F5F9' : '#94A3B8',
-    textDecoration: 'none',
-    fontWeight: location.pathname === path ? 600 : 400,
-  });
-
   // Don't render if not authenticated
   if (!isAuthenticated) {
     return null;
   }
 
+  const links = [
+    { to: '/app', label: 'Feed', icon: Home },
+    { to: '/app/messages', label: 'Messages', icon: MessagesSquare },
+    { to: '/app/communities', label: 'Communities', icon: Users },
+    { to: '/app/reports', label: 'My Reports', icon: Shield },
+    { to: '/app/profile', label: 'Profile', icon: UserCircle2 },
+  ];
+
   return (
-    <div style={{ display: 'flex', height: '100vh', background: '#0F1117' }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <nav style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', background: '#1A1D27' }}>
-          <div style={{ display: 'flex', gap: '24px', maxWidth: '1200px', margin: '0 auto', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', gap: '24px' }}>
-                <Link to="/app" style={navLinkStyle('/app')}>Nebula</Link>
-                <Link to="/app/messages" style={navLinkStyle('/app/messages')}>Messages</Link>
-                <Link to="/app/communities" style={navLinkStyle('/app/communities')}>Communities</Link>
-                <Link to="/app/reports" style={navLinkStyle('/app/reports')}>Reports</Link>
-                <Link to="/app/profile" style={navLinkStyle('/app/profile')}>Profile</Link>
+    <div className="shell shell-app">
+      <div className="app-shell">
+        <nav className="topbar">
+          <div className="topbar__inner">
+            <div className="topbar__brand">
+              <BrandMark compact />
+              <div className="topbar__copy">
+                <strong>{currentUser?.role === 'admin' ? 'Admin enabled' : 'Shadow feed'}</strong>
+                <span>{currentUser?.username}</span>
+              </div>
             </div>
-            <button
-              onClick={handleLogout}
-              style={{
-                padding: '8px 16px',
-                background: '#EF4444',
-                border: 'none',
-                borderRadius: '4px',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '14px',
-              }}
-            >
-              Log Out
+
+            <div className="topbar__nav">
+              {links.map(({ to, label, icon: Icon }) => {
+                const isActive = location.pathname === to;
+                return (
+                  <Link key={to} className={`topbar__link ${isActive ? 'is-active' : ''}`} to={to}>
+                    <Icon size={16} />
+                    {label}
+                  </Link>
+                );
+              })}
+              {currentUser?.role === 'admin' && (
+                <Link className={`topbar__link ${location.pathname.startsWith('/admin') ? 'is-active' : ''}`} to="/admin">
+                  <Shield size={16} />
+                  Admin
+                </Link>
+              )}
+            </div>
+
+            <button className="app-button app-button--danger" onClick={handleLogout}>
+              <LogOut size={16} />
+              Log out
             </button>
           </div>
         </nav>
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+
+        <div className="app-shell__content">
           <Outlet />
         </div>
       </div>

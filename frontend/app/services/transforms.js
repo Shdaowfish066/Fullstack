@@ -12,6 +12,8 @@ export function normalizeUser(user) {
 
   return {
     ...user,
+    isActive: user.is_active ?? user.isActive ?? true,
+    role: user.role ?? 'user',
     createdAt: user.created_at ?? user.createdAt ?? null,
   };
 }
@@ -148,6 +150,37 @@ export function normalizeReport(report) {
     commentId: report.comment_id ?? report.commentId ?? null,
     createdAt: report.created_at ?? report.createdAt ?? null,
     statusLabel: String(report.status ?? '').toLowerCase(),
+  };
+}
+
+export function normalizeAdminReport(report) {
+  if (!report) {
+    return null;
+  }
+
+  return {
+    ...report,
+    reporter: normalizeUser(report.reporter),
+    targetId: report.target_id ?? report.targetId ?? null,
+    targetType: report.target_type ?? report.targetType ?? 'post',
+    targetTitle: report.target_title ?? report.targetTitle ?? null,
+    targetPreview: report.target_preview ?? report.targetPreview ?? null,
+    createdAt: report.created_at ?? report.createdAt ?? null,
+  };
+}
+
+export function normalizeAdminDashboard(payload) {
+  if (!payload) {
+    return null;
+  }
+
+  return {
+    stats: payload.stats ?? {},
+    recentReports: Array.isArray(payload.recent_reports)
+      ? payload.recent_reports.map(normalizeAdminReport).filter(Boolean)
+      : Array.isArray(payload.recentReports)
+        ? payload.recentReports.map(normalizeAdminReport).filter(Boolean)
+        : [],
   };
 }
 

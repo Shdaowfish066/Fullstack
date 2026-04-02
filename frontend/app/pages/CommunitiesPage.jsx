@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { Compass, Plus, Users } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useToast } from '../store/ToastContext';
 import { communitiesService, usersService } from '../services';
@@ -118,87 +119,81 @@ export default function CommunitiesPage() {
   };
 
   if (!currentUser) {
-    return <div style={{ padding: '24px', color: '#F1F5F9' }}>Please log in to join communities</div>;
+    return <div className="page-shell"><div className="panel panel-empty">Please log in to join communities.</div></div>;
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <h1 style={{ color: '#F1F5F9', marginBottom: '24px' }}>Communities</h1>
+    <div className="page-shell">
+      <section className="panel page-hero">
+        <span className="dashboard-badge">
+          <Compass size={14} />
+          Community network
+        </span>
+        <h1>Find your circles or build a new one.</h1>
+        <p>Clubs, cohorts, and interest spaces now live in a cleaner browse-and-create experience.</p>
+      </section>
 
-      <form onSubmit={handleCreateCommunity} style={{
-        display: 'grid',
-        gap: 12,
-        gridTemplateColumns: '2fr 3fr auto',
-        marginBottom: 24,
-        padding: 20,
-        background: '#1A1D27',
-        borderRadius: 8,
-        border: '1px solid rgba(255,255,255,0.1)',
-      }}>
+      <form onSubmit={handleCreateCommunity} className="panel communities-create-form">
         <input
           type="text"
           placeholder="Community name"
           value={form.name}
           onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-          style={{ padding: '12px 16px', background: '#252D3D', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#F1F5F9' }}
+          className="search-input"
         />
         <input
           type="text"
           placeholder="Description"
           value={form.description}
           onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
-          style={{ padding: '12px 16px', background: '#252D3D', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#F1F5F9' }}
+          className="search-input"
         />
         <button
           type="submit"
           disabled={creating}
-          style={{ padding: '12px 16px', background: '#6C63FF', border: 'none', borderRadius: 8, color: 'white', fontWeight: 600, cursor: creating ? 'not-allowed' : 'pointer', opacity: creating ? 0.7 : 1 }}
+          className="app-button app-button--primary"
         >
+          <Plus size={16} />
           {creating ? 'Creating...' : 'Create'}
         </button>
       </form>
 
       {loading ? (
-        <div style={{ color: '#64748B' }}>Loading communities...</div>
+        <div className="panel panel-empty">Loading communities...</div>
       ) : communities.length === 0 ? (
-        <div style={{ color: '#64748B', textAlign: 'center', padding: '40px' }}>No communities yet</div>
+        <div className="panel panel-empty">No communities yet.</div>
       ) : (
-        <div style={{ display: 'grid', gap: '16px', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+        <div className="community-grid">
           {communities.map(community => (
-            <div key={community.id} style={{ padding: '20px', background: '#1A1D27', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <h2 style={{ color: '#F1F5F9', marginBottom: '8px' }}>{community.name}</h2>
-              <p style={{ color: '#94A3B8', marginBottom: '12px', fontSize: '14px' }}>{community.description}</p>
-              <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '16px' }}>
-                {community.memberCount} members • Captain: {community.captainName}
+            <article key={community.id} className="community-card panel">
+              <div className="community-card__icon"><Users size={20} /></div>
+              <h2>{community.name}</h2>
+              <p>{community.description}</p>
+              <div className="community-card__meta">
+                <span>{community.memberCount} members</span>
+                <span>Captain: {community.captainName}</span>
               </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div className="community-card__actions">
                 <button
                   onClick={() => navigate(`/app/communities/${community.id}`)}
-                  style={{
-                    padding: '8px 16px', background: '#6C63FF', border: 'none', borderRadius: '6px', color: 'white', fontWeight: 600, cursor: 'pointer',
-                  }}
+                  className="app-button app-button--primary"
                 >
                   Open
                 </button>
                 <button
                   onClick={() => handleJoinCommunity(community.id)}
-                  style={{
-                    padding: '8px 16px', background: membershipState[community.id] === 'joined' ? '#64748B' : '#22C55E',
-                    border: 'none', borderRadius: '6px', color: 'white', fontWeight: 600, cursor: 'pointer',
-                  }}
+                  className={`app-button ${membershipState[community.id] === 'joined' ? 'app-button--ghost' : 'app-button--success'}`}
                 >
                   {membershipState[community.id] === 'joined' ? 'Joined' : 'Join'}
                 </button>
                 <button
                   onClick={() => handleLeaveCommunity(community.id)}
-                  style={{
-                    padding: '8px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '6px', color: '#F1F5F9', fontWeight: 600, cursor: 'pointer',
-                  }}
+                  className="app-button app-button--ghost"
                 >
                   Leave
                 </button>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       )}

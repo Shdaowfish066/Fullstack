@@ -1,6 +1,9 @@
 import { createBrowserRouter } from 'react-router';
 import { RootLayout } from './components/layout/RootLayout';
+import { AdminLayout } from './components/layout/AdminLayout';
 import AuthPage from './pages/AuthPage';
+import AdminAuthPage from './pages/AdminAuthPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import FeedPage from './pages/FeedPage';
 import SinglePostPage from './pages/SinglePostPage';
 import CommunitiesPage from './pages/CommunitiesPage';
@@ -21,6 +24,19 @@ export const router = createBrowserRouter([
     path: '/auth',
     Component: AuthPage,
     errorElement: <NotFoundPage />,
+  },
+  {
+    path: '/admin/auth',
+    Component: AdminAuthPage,
+    errorElement: <NotFoundPage />,
+  },
+  {
+    path: '/admin',
+    Component: AdminLayout,
+    errorElement: <NotFoundPage />,
+    children: [
+      { index: true, Component: AdminDashboardPage },
+    ],
   },
   {
     path: '/app',

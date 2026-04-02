@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { CalendarDays, FileText, MessageSquareMore, Upload, UserRound } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useToast } from '../store/ToastContext';
 import { filesService, postsService, usersService } from '../services';
@@ -41,74 +42,92 @@ export default function UserProfilePage() {
   }, [showError, username]);
 
   if (!currentUser) {
-    return <div style={{ padding: '24px', color: '#F1F5F9' }}>Please log in to view profiles</div>;
+    return <div className="page-shell"><div className="panel panel-empty">Please log in to view profiles.</div></div>;
   }
 
   if (loading) {
-    return <div style={{ padding: '24px', color: '#64748B' }}>Loading profile...</div>;
+    return <div className="page-shell"><div className="panel panel-empty">Loading profile...</div></div>;
   }
 
   if (!user) {
-    return <div style={{ padding: '24px', color: '#F1F5F9' }}>User not found</div>;
+    return <div className="page-shell"><div className="panel panel-empty">User not found.</div></div>;
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '960px', margin: '0 auto' }}>
-      <div style={{ background: '#1A1D27', borderRadius: 12, padding: 24, border: '1px solid rgba(255,255,255,0.1)', marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center' }}>
-          <div>
-            <h1 style={{ color: '#F1F5F9', margin: 0, marginBottom: 8 }}>{user.username}</h1>
-            <div style={{ color: '#94A3B8', marginBottom: 8 }}>{user.email}</div>
-            <div style={{ display: 'flex', gap: 16, color: '#64748B', fontSize: 13 }}>
-              <span>{posts.length} posts</span>
-              <span>{files.length} uploads</span>
-              <span>Joined {new Date(user.createdAt).toLocaleDateString()}</span>
-            </div>
-          </div>
-          {currentUser.id !== user.id && (
-            <button
-              onClick={() => navigate(`/app/messages?user=${user.id}`)}
-              style={{ padding: '10px 14px', borderRadius: 8, border: 'none', background: '#6C63FF', color: 'white', fontWeight: 600, cursor: 'pointer' }}
-            >
-              Message User
-            </button>
-          )}
-        </div>
-      </div>
+    <div className="page-shell profile-shell">
+      <section className="panel page-hero profile-hero">
+        <span className="dashboard-badge">
+          <UserRound size={14} />
+          Public profile
+        </span>
+        <h1>{user.username}</h1>
+        <p>See recent posts, uploads, and account activity with the same polished presentation as the rest of the app.</p>
+      </section>
 
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ color: '#F1F5F9', marginBottom: 16 }}>Posts</h2>
+      <section className="panel user-profile-summary">
+        <div className="profile-summary-card__identity">
+          <div className="profile-avatar-large">{user.username.charAt(0).toUpperCase()}</div>
+          <div>
+            <h2>{user.username}</h2>
+            <p>{user.email}</p>
+          </div>
+        </div>
+        <div className="user-profile-stats">
+          <span><FileText size={16} />{posts.length} posts</span>
+          <span><Upload size={16} />{files.length} uploads</span>
+          <span><CalendarDays size={16} />Joined {new Date(user.createdAt).toLocaleDateString()}</span>
+        </div>
+        {currentUser.id !== user.id && (
+          <button className="app-button app-button--primary" onClick={() => navigate(`/app/messages?user=${user.id}`)}>
+            <MessageSquareMore size={16} />
+            Message User
+          </button>
+        )}
+      </section>
+
+      <section className="panel profile-section-card">
+        <div className="panel-header">
+          <div>
+            <h2>Posts</h2>
+            <p>Recent writing from this user.</p>
+          </div>
+        </div>
         {posts.length === 0 ? (
           <EmptyState type="posts" />
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="profile-content-list">
             {posts.map(post => (
               <button
                 key={post.id}
                 onClick={() => navigate(`/app/post/${post.id}`)}
-                style={{ textAlign: 'left', background: '#1A1D27', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: 16, cursor: 'pointer' }}
+                className="user-profile-post-card"
               >
-                <div style={{ color: '#F1F5F9', fontWeight: 600, marginBottom: 8 }}>{post.title}</div>
-                <div style={{ color: '#94A3B8', marginBottom: 8 }}>{post.content.slice(0, 180)}{post.content.length > 180 ? '...' : ''}</div>
-                <div style={{ color: '#64748B', fontSize: 12 }}>{new Date(post.createdAt).toLocaleString()}</div>
+                <strong>{post.title}</strong>
+                <p>{post.content.slice(0, 180)}{post.content.length > 180 ? '...' : ''}</p>
+                <span>{new Date(post.createdAt).toLocaleString()}</span>
               </button>
             ))}
           </div>
         )}
-      </div>
+      </section>
 
-      <div>
-        <h2 style={{ color: '#F1F5F9', marginBottom: 16 }}>Uploads</h2>
+      <section className="panel profile-section-card">
+        <div className="panel-header">
+          <div>
+            <h2>Uploads</h2>
+            <p>Shared files and attachments.</p>
+          </div>
+        </div>
         {files.length === 0 ? (
-          <div style={{ color: '#64748B' }}>No uploads yet.</div>
+          <div className="panel-empty">No uploads yet.</div>
         ) : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div className="profile-files-wrap">
             {files.map(file => (
               <FileChip key={file.id} file={file} />
             ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

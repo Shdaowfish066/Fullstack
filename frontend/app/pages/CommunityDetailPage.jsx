@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { Crown, Plus, ShieldCheck, Users } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useToast } from '../store/ToastContext';
 import { communitiesService, usersService } from '../services';
@@ -137,79 +138,84 @@ export default function CommunityDetailPage() {
   };
 
   if (!currentUser) {
-    return <div style={{ padding: '24px', color: '#F1F5F9' }}>Please log in to view communities</div>;
+    return <div className="page-shell"><div className="panel panel-empty">Please log in to view communities.</div></div>;
   }
 
-  if (loading) return <div style={{ padding: '24px', color: '#64748B' }}>Loading...</div>;
-  if (!community) return <div style={{ padding: '24px', color: '#F1F5F9' }}>Community not found</div>;
+  if (loading) return <div className="page-shell"><div className="panel panel-empty">Loading community...</div></div>;
+  if (!community) return <div className="page-shell"><div className="panel panel-empty">Community not found.</div></div>;
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{
-        background: '#1A1D27',
-        borderRadius: '8px',
-        padding: '24px',
-        border: '1px solid rgba(255,255,255,0.1)',
-        marginBottom: '24px',
-      }}>
-        <h1 style={{ color: '#F1F5F9', fontSize: '28px', fontWeight: 700, marginBottom: '12px' }}>
-          {community.name}
-        </h1>
-        <p style={{ color: '#94A3B8', marginBottom: '16px' }}>{community.description}</p>
-        <div style={{ display: 'flex', gap: '24px', fontSize: '14px', color: '#64748B' }}>
+    <div className="page-shell community-detail-shell">
+      <section className="panel community-detail-hero">
+        <span className="dashboard-badge">
+          <Users size={14} />
+          Community detail
+        </span>
+        <h1>{community.name}</h1>
+        <p>{community.description}</p>
+        <div className="community-detail-hero__meta">
           <div>
-            Captain:{' '}
+            <span>Captain</span>
             <button
               onClick={() => captain?.username && navigate(`/app/u/${encodeURIComponent(captain.username)}`)}
-              style={{ background: 'transparent', border: 'none', padding: 0, color: '#F1F5F9', cursor: captain?.username ? 'pointer' : 'default' }}
+              className="community-link-button"
             >
               {captain?.username || `User #${community.captainId}`}
             </button>
           </div>
-          <div>Members: <span style={{ color: '#F1F5F9' }}>{community.memberCount}</span></div>
+          <div>
+            <span>Members</span>
+            <strong>{community.memberCount}</strong>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16 }}>
+        <div className="community-detail-hero__actions">
           {!isMember ? (
-            <button onClick={handleJoin} style={{ padding: '10px 14px', background: '#22C55E', border: 'none', borderRadius: 8, color: 'white', cursor: 'pointer', fontWeight: 600 }}>Join Community</button>
+            <button className="app-button app-button--success" onClick={handleJoin}><Users size={16} />Join Community</button>
           ) : (
             <>
-              <button onClick={() => setShowCreateModal(true)} style={{ padding: '10px 14px', background: '#6C63FF', border: 'none', borderRadius: 8, color: 'white', cursor: 'pointer', fontWeight: 600 }}>Create Community Post</button>
+              <button className="app-button app-button--primary" onClick={() => setShowCreateModal(true)}><Plus size={16} />Create Community Post</button>
               {!isCaptain && (
-                <button onClick={handleLeave} style={{ padding: '10px 14px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, color: '#F1F5F9', cursor: 'pointer' }}>Leave Community</button>
+                <button className="app-button app-button--ghost" onClick={handleLeave}>Leave Community</button>
               )}
             </>
           )}
           {isCaptain && (
-            <button onClick={handleDeleteCommunity} style={{ padding: '10px 14px', background: 'transparent', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 8, color: '#EF4444', cursor: 'pointer' }}>Delete Community</button>
+            <button className="app-button app-button--danger" onClick={handleDeleteCommunity}>Delete Community</button>
           )}
         </div>
-      </div>
+      </section>
 
       {isMember && (
-        <div style={{ background: '#1A1D27', borderRadius: '8px', padding: '24px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '24px' }}>
-          <h2 style={{ color: '#F1F5F9', marginBottom: 16, fontSize: '20px', fontWeight: 600 }}>Members</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: isCaptain ? 20 : 0 }}>
+        <section className="panel community-detail-section">
+          <div className="panel-header">
+            <div>
+              <h2>Members</h2>
+              <p>Everyone inside this community.</p>
+            </div>
+          </div>
+          <div className="community-member-list">
             {members.map(member => (
               <button
                 key={member.userId}
                 onClick={() => navigate(`/app/u/${encodeURIComponent(member.username)}`)}
-                style={{ padding: '8px 12px', borderRadius: 999, background: member.role === 'captain' ? 'rgba(108,99,255,0.2)' : 'rgba(255,255,255,0.06)', color: '#F1F5F9', border: 'none', cursor: 'pointer' }}
+                className={`community-member-chip ${member.role === 'captain' ? 'is-captain' : ''}`}
               >
+                {member.role === 'captain' && <Crown size={14} />}
                 {member.username} · {member.role}
               </button>
             ))}
           </div>
           {isCaptain && members.some(member => member.userId !== community.captainId) && (
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <select value={selectedCaptainId} onChange={e => setSelectedCaptainId(e.target.value)} style={{ padding: '10px 12px', background: '#252D3D', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#F1F5F9' }}>
+            <div className="community-transfer-box">
+              <select value={selectedCaptainId} onChange={e => setSelectedCaptainId(e.target.value)} className="search-input">
                 {members.filter(member => member.userId !== community.captainId).map(member => (
                   <option key={member.userId} value={member.userId}>{member.username}</option>
                 ))}
               </select>
-              <button onClick={handleTransferCaptaincy} style={{ padding: '10px 14px', background: '#F59E0B', border: 'none', borderRadius: 8, color: 'white', cursor: 'pointer', fontWeight: 600 }}>Transfer Captaincy</button>
+              <button className="app-button app-button--success" onClick={handleTransferCaptaincy}><ShieldCheck size={16} />Transfer Captaincy</button>
             </div>
           )}
-        </div>
+        </section>
       )}
 
       <CreatePostModal
@@ -220,47 +226,55 @@ export default function CommunityDetailPage() {
       />
 
       {selectedPost && (
-        <div style={{ background: '#1A1D27', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', padding: 24, marginBottom: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-            <h2 style={{ color: '#F1F5F9', margin: 0 }}>{selectedPost.title}</h2>
-            <button onClick={() => setSelectedPost(null)} style={{ background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer' }}>Close</button>
+        <section className="panel community-detail-preview">
+          <div className="panel-header">
+            <div>
+              <h2>{selectedPost.title}</h2>
+              <p>Community post preview</p>
+            </div>
+            <button className="app-button app-button--ghost" onClick={() => setSelectedPost(null)}>Close</button>
           </div>
-          <div style={{ color: '#94A3B8', marginBottom: 12 }}>{selectedPost.content}</div>
-          <div style={{ color: '#64748B', fontSize: 12 }}>
-            <button onClick={() => navigate(`/app/u/${encodeURIComponent(selectedPost.authorName)}`)} style={{ background: 'transparent', border: 'none', padding: 0, color: '#64748B', cursor: 'pointer' }}>{selectedPost.authorName}</button> • {new Date(selectedPost.createdAt).toLocaleString()}
+          <div className="community-detail-preview__content">{selectedPost.content}</div>
+          <div className="community-detail-preview__meta">
+            <button onClick={() => navigate(`/app/u/${encodeURIComponent(selectedPost.authorName)}`)} className="community-link-button">{selectedPost.authorName}</button> • {new Date(selectedPost.createdAt).toLocaleString()}
           </div>
-        </div>
+        </section>
       )}
 
-      <h2 style={{ color: '#F1F5F9', marginBottom: '16px', fontSize: '20px', fontWeight: 600 }}>Posts</h2>
+      <section className="panel community-detail-section">
+        <div className="panel-header">
+          <div>
+            <h2>Posts</h2>
+            <p>Shared inside this community.</p>
+          </div>
+        </div>
 
-      {!isMember ? (
-        <div style={{ color: '#94A3B8' }}>Join this community to view its members and posts.</div>
-      ) : posts.length === 0 ? (
-        <EmptyState type="posts" />
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {posts.map(post => (
-            <div key={post.id} style={{ background: '#1A1D27', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', padding: '18px 20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+        {!isMember ? (
+          <div className="panel-empty">Join this community to view its members and posts.</div>
+        ) : posts.length === 0 ? (
+          <EmptyState type="posts" />
+        ) : (
+          <div className="community-post-list">
+            {posts.map(post => (
+              <article key={post.id} className="community-post-card">
                 <div>
-                  <div style={{ fontWeight: 600, color: '#F1F5F9', marginBottom: 8 }}>{post.title}</div>
-                  <div style={{ color: '#94A3B8', marginBottom: 12, lineHeight: 1.5 }}>{post.content}</div>
-                  <div style={{ fontSize: '12px', color: '#64748B' }}>
-                    <button onClick={() => navigate(`/app/u/${encodeURIComponent(post.authorName)}`)} style={{ background: 'transparent', border: 'none', padding: 0, color: '#64748B', cursor: 'pointer' }}>By {post.authorName}</button> • {new Date(post.createdAt).toLocaleDateString()}
+                  <h3>{post.title}</h3>
+                  <p>{post.content}</p>
+                  <div className="community-detail-preview__meta">
+                    <button onClick={() => navigate(`/app/u/${encodeURIComponent(post.authorName)}`)} className="community-link-button">By {post.authorName}</button> • {new Date(post.createdAt).toLocaleDateString()}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, height: 'fit-content' }}>
-                  <button onClick={() => handleOpenPost(post.id)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: '#F1F5F9', cursor: 'pointer' }}>View</button>
+                <div className="community-card__actions">
+                  <button className="app-button app-button--ghost" onClick={() => handleOpenPost(post.id)}>View</button>
                   {(post.authorId === currentUser?.id || isCaptain) && (
-                    <button onClick={() => handleDeletePost(post.id)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(239,68,68,0.4)', background: 'transparent', color: '#EF4444', cursor: 'pointer', height: 'fit-content' }}>Delete</button>
+                    <button className="app-button app-button--danger" onClick={() => handleDeletePost(post.id)}>Delete</button>
                   )}
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

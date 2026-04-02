@@ -17,10 +17,44 @@ export const authService = {
     return userData;
   },
 
+  adminRegister: async (email, username, password, adminCode) => {
+    const response = await apiClient.post('/auth/admin/register', {
+      email,
+      username,
+      password,
+      admin_code: adminCode,
+    });
+
+    return normalizeUser(response);
+  },
+
   login: async (email, password) => {
     const response = await apiClient.post('/auth/login', {
       email,
       password,
+    });
+
+    if (response.access_token) {
+      apiClient.setToken(response.access_token);
+      apiClient.setRefreshToken(response.refresh_token);
+      localStorage.setItem('token', response.access_token);
+      localStorage.setItem('refreshToken', response.refresh_token);
+
+      const userResponse = await apiClient.get('/users/me');
+      const userData = normalizeUser(userResponse);
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+
+      return userData;
+    }
+
+    return response;
+  },
+
+  adminLogin: async (email, password, adminCode) => {
+    const response = await apiClient.post('/auth/admin/login', {
+      email,
+      password,
+      admin_code: adminCode,
     });
 
     if (response.access_token) {

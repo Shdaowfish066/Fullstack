@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { setUnauthorizedCallback } from '../services';
+import { authService, setUnauthorizedCallback } from '../services';
 
 const AppContext = createContext(null);
 
@@ -13,6 +13,8 @@ export function AppProvider({ children }) {
 
   // Load auth from localStorage on mount and setup unauthorized callback
   useEffect(() => {
+    let isMounted = true;
+
     const token = localStorage.getItem('token');
     const refreshToken = localStorage.getItem('refreshToken');
     const user = localStorage.getItem('currentUser');
@@ -21,6 +23,27 @@ export function AppProvider({ children }) {
       try {
         setCurrentUser(JSON.parse(user));
         setIsAuthenticated(true);
+
+        authService.getCurrentUser()
+          .then((freshUser) => {
+            if (!isMounted || !freshUser) {
+              return;
+            }
+
+            setCurrentUser(freshUser);
+            localStorage.setItem('currentUser', JSON.stringify(freshUser));
+          })
+          .catch(() => {
+            if (!isMounted) {
+              return;
+            }
+
+            setIsAuthenticated(false);
+            setCurrentUser(null);
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('currentUser');
+          });
       } catch (error) {
         console.error('Failed to load auth:', error);
         localStorage.removeItem('token');
@@ -33,7 +56,14 @@ export function AppProvider({ children }) {
     setUnauthorizedCallback(() => {
       setIsAuthenticated(false);
       setCurrentUser(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('currentUser');
     });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Post operations

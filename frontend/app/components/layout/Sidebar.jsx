@@ -14,7 +14,7 @@ export function Sidebar() {
       gap: '24px',
     }}>
       <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ color: '#F1F5F9', fontSize: '24px', fontWeight: 800 }}>Nebula</h1>
+        <h1 style={{ color: '#F1F5F9', fontSize: '24px', fontWeight: 800 }}>ShadowRealm</h1>
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
