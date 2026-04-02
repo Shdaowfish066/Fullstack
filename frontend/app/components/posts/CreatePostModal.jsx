@@ -21,7 +21,10 @@ export function CreatePostModal({ isOpen, onClose, communityId, onCreated }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) {
+    const trimmedTitle = title.trim();
+    const trimmedContent = content.trim();
+
+    if (!trimmedTitle || !trimmedContent) {
       showError('Please fill in all fields');
       return;
     }
@@ -31,9 +34,13 @@ export function CreatePostModal({ isOpen, onClose, communityId, onCreated }) {
       let createdPost = null;
 
       if (communityId) {
-        createdPost = await communitiesService.createCommunityPost(communityId, title, content);
+        createdPost = await communitiesService.createCommunityPost(communityId, trimmedTitle, trimmedContent);
       } else {
-        createdPost = await postsService.createPost({ title, content, isAnonymous });
+        createdPost = await postsService.createPost({
+          title: trimmedTitle,
+          content: trimmedContent,
+          isAnonymous,
+        });
       }
 
       let uploadedFiles = [];
@@ -53,7 +60,7 @@ export function CreatePostModal({ isOpen, onClose, communityId, onCreated }) {
         files: [...(createdPost.files || []), ...uploadedFiles],
       };
 
-      onCreated?.(postWithFiles);
+      await onCreated?.(postWithFiles);
       showSuccess('Post created!', 'Your post has been published.');
       resetForm();
       onClose();

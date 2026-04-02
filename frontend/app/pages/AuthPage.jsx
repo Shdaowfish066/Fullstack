@@ -8,19 +8,19 @@ import { authService } from '../services';
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated, setIsAuthenticated, setCurrentUser } = useApp();
+  const { authReady, currentUser, isAuthenticated, setIsAuthenticated, setCurrentUser } = useApp();
   const { showSuccess, showError } = useToast();
   const [mode, setMode] = useState('login');
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ username: '', email: '', password: '' });
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!authReady || !isAuthenticated) {
       return;
     }
 
     navigate(currentUser?.role === 'admin' ? '/admin' : '/app');
-  }, [currentUser?.role, isAuthenticated, navigate]);
+  }, [authReady, currentUser?.role, isAuthenticated, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -1,16 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { BrandMark } from '../components/layout/BrandMark';
 import { useApp } from '../store/AppContext';
 import { useToast } from '../store/ToastContext';
 import { postsService, reportsService, votesService } from '../services';
-import { ArrowRight, MessageCircle, Sparkles, Trash2 } from 'lucide-react';
-import { CreatePostModal } from '../components/posts/CreatePostModal';
+import { ArrowRight, MessageCircle, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { FileChip } from '../components/shared/FileChip';
 import { VoteScore } from '../components/shared/VoteScore';
-
-const FEED_CACHE_TTL_MS = 30_000;
-let feedCache = null;
 
 export default function FeedPage() {
   const navigate = useNavigate();
@@ -19,68 +15,34 @@ export default function FeedPage() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userVotes, setUserVotes] = useState({});
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [ownedPostIds, setOwnedPostIds] = useState([]);
 
   const applyVoteDelta = (score, currentVote, nextVote) => (score ?? 0) + (nextVote - currentVote);
 
-  useEffect(() => {
-    const hasFreshCache = feedCache
-      && feedCache.userId === currentUser?.id
-      && (Date.now() - feedCache.timestamp) < FEED_CACHE_TTL_MS;
+  const loadPosts = useCallback(async () => {
+    setLoading(true);
 
-    if (hasFreshCache) {
-      setPosts(feedCache.posts);
-      setOwnedPostIds(feedCache.ownedPostIds);
-      setUserVotes(feedCache.userVotes ?? {});
+    try {
+      const allPosts = await postsService.getAllPosts();
+      const myPosts = currentUser?.id
+        ? await postsService.getMyPosts().catch(() => [])
+        : [];
+
+      const nextOwnedPostIds = myPosts.map(post => post.id);
+
+      setPosts(allPosts);
+      setOwnedPostIds(nextOwnedPostIds);
+    } catch (error) {
+      showError(error.message || 'Failed to load posts');
+      throw error;
+    } finally {
       setLoading(false);
     }
-
-    const loadPosts = async () => {
-      if (!hasFreshCache) {
-        setLoading(true);
-      }
-
-      try {
-        const [allPosts, myPosts] = await Promise.all([
-          postsService.getAllPosts(),
-          postsService.getMyPosts().catch(() => []),
-        ]);
-
-        const nextOwnedPostIds = myPosts.map(post => post.id);
-
-        setPosts(allPosts);
-        setOwnedPostIds(nextOwnedPostIds);
-        feedCache = {
-          userId: currentUser?.id,
-          posts: allPosts,
-          ownedPostIds: nextOwnedPostIds,
-          userVotes: hasFreshCache ? (feedCache?.userVotes ?? {}) : {},
-          timestamp: Date.now(),
-        };
-      } catch (error) {
-        showError(error.message || 'Failed to load posts');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadPosts();
   }, [currentUser?.id, showError]);
 
   useEffect(() => {
-    if (!currentUser?.id) {
-      return;
-    }
-
-    feedCache = {
-      userId: currentUser.id,
-      posts,
-      ownedPostIds,
-      userVotes,
-      timestamp: Date.now(),
-    };
-  }, [currentUser?.id, ownedPostIds, posts, userVotes]);
+    loadPosts().catch(() => null);
+  }, [loadPosts]);
 
   const handleVote = async (postId, direction) => {
     const currentVote = userVotes[postId] || 0;
@@ -145,18 +107,6 @@ export default function FeedPage() {
     }
   };
 
-  const handleCreated = (createdPost) => {
-    setOwnedPostIds(prev => [createdPost.id, ...prev]);
-    setPosts(prev => [
-      {
-        ...createdPost,
-        score: 0,
-        commentCount: 0,
-      },
-      ...prev,
-    ]);
-  };
-
   if (!currentUser) {
     return (
       <div className="page-shell">
@@ -197,17 +147,12 @@ export default function FeedPage() {
               <ArrowRight size={18} />
             </button>
           )}
-          <button className="app-button app-button--primary" onClick={() => setShowCreateModal(true)}>
+          <button className="app-button app-button--primary" onClick={() => navigate('/app/create-post')}>
+            <Plus size={16} />
             Create Post
           </button>
         </div>
       </section>
-      
-      <CreatePostModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onCreated={handleCreated}
-      />
 
       {loading ? (
         <div className="panel panel-empty">Loading posts...</div>

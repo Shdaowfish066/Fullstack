@@ -124,8 +124,13 @@ export default function CommunityDetailPage() {
     }
   };
 
-  const handleCommunityPostCreated = (createdPost) => {
-    setPosts(prev => [createdPost, ...prev]);
+  const handleCommunityPostCreated = async (createdPost) => {
+    try {
+      const refreshedPosts = await communitiesService.listCommunityPosts(id);
+      setPosts(refreshedPosts);
+    } catch {
+      setPosts(prev => prev.some(post => post.id === createdPost?.id) ? prev : [createdPost, ...prev]);
+    }
   };
 
   const handleOpenPost = async (postId) => {

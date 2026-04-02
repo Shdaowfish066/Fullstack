@@ -9,10 +9,11 @@ export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
-    { label: 'Feed', path: '/' },
-    { label: 'Communities', path: '/communities' },
-    { label: 'Messages', path: '/messages' },
-    { label: 'Profile', path: '/profile' },
+    { label: 'Feed', path: '/app' },
+    { label: 'Create Post', path: '/app/create-post' },
+    { label: 'Communities', path: '/app/communities' },
+    { label: 'Messages', path: '/app/messages' },
+    { label: 'Profile', path: '/app/profile' },
   ];
 
   return (

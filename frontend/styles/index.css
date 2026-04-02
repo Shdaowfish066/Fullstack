@@ -1234,11 +1234,13 @@ h3,
 }
 
 .message-bubble {
-  max-width: min(72%, 680px);
-  padding: 16px 18px;
-  border-radius: 24px;
+  width: fit-content;
+  max-width: min(58%, 420px);
+  padding: 10px 14px;
+  border-radius: 16px;
   display: grid;
-  gap: 10px;
+  gap: 6px;
+  align-self: start;
 }
 
 .message-bubble.is-mine {
@@ -1252,15 +1254,17 @@ h3,
 
 .message-bubble__content {
   color: #f8fbff;
-  line-height: 1.6;
+  line-height: 1.45;
+  font-size: 0.96rem;
+  word-break: break-word;
 }
 
 .message-bubble__meta {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: rgba(226, 232, 240, 0.6);
 }
 

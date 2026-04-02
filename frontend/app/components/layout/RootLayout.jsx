@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
-import { Home, MessagesSquare, Shield, Users, UserCircle2, LogOut } from 'lucide-react';
+import { Home, MessagesSquare, PenSquare, Shield, Users, UserCircle2, LogOut } from 'lucide-react';
 import { useApp } from '../../store/AppContext';
 import { authService } from '../../services';
 import { BrandMark } from './BrandMark';
@@ -8,14 +8,14 @@ import { BrandMark } from './BrandMark';
 export function RootLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated, setIsAuthenticated, setCurrentUser } = useApp();
+  const { authReady, currentUser, isAuthenticated, setIsAuthenticated, setCurrentUser } = useApp();
 
   // Redirect to auth if not authenticated
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (authReady && !isAuthenticated) {
       navigate('/auth');
     }
-  }, [isAuthenticated, navigate]);
+  }, [authReady, isAuthenticated, navigate]);
 
   const handleLogout = () => {
     authService.logout();
@@ -25,12 +25,13 @@ export function RootLayout() {
   };
 
   // Don't render if not authenticated
-  if (!isAuthenticated) {
+  if (!authReady || !isAuthenticated) {
     return null;
   }
 
   const links = [
     { to: '/app', label: 'Feed', icon: Home },
+    { to: '/app/create-post', label: 'Create', icon: PenSquare },
     { to: '/app/messages', label: 'Messages', icon: MessagesSquare },
     { to: '/app/communities', label: 'Communities', icon: Users },
     { to: '/app/reports', label: 'My Reports', icon: Shield },

@@ -8,9 +8,13 @@ import { authService } from '../../services';
 export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated, setCurrentUser, setIsAuthenticated } = useApp();
+  const { authReady, currentUser, isAuthenticated, setCurrentUser, setIsAuthenticated } = useApp();
 
   useEffect(() => {
+    if (!authReady) {
+      return;
+    }
+
     if (!isAuthenticated) {
       navigate('/admin/auth');
       return;
@@ -19,7 +23,7 @@ export function AdminLayout() {
     if (currentUser?.role !== 'admin') {
       navigate('/app');
     }
-  }, [currentUser?.role, isAuthenticated, navigate]);
+  }, [authReady, currentUser?.role, isAuthenticated, navigate]);
 
   const handleLogout = () => {
     authService.logout();
@@ -28,7 +32,7 @@ export function AdminLayout() {
     navigate('/admin/auth');
   };
 
-  if (!isAuthenticated || currentUser?.role !== 'admin') {
+  if (!authReady || !isAuthenticated || currentUser?.role !== 'admin') {
     return null;
   }
 

@@ -4,6 +4,7 @@ import { authService, setUnauthorizedCallback } from '../services';
 const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
+  const [authReady, setAuthReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -23,6 +24,7 @@ export function AppProvider({ children }) {
       try {
         setCurrentUser(JSON.parse(user));
         setIsAuthenticated(true);
+        setAuthReady(true);
 
         authService.getCurrentUser()
           .then((freshUser) => {
@@ -43,13 +45,17 @@ export function AppProvider({ children }) {
             localStorage.removeItem('token');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('currentUser');
+            setAuthReady(true);
           });
       } catch (error) {
         console.error('Failed to load auth:', error);
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('currentUser');
+        setAuthReady(true);
       }
+    } else {
+      setAuthReady(true);
     }
 
     // Setup callback for when API returns 401 (unauthorized)
@@ -59,6 +65,7 @@ export function AppProvider({ children }) {
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('currentUser');
+      setAuthReady(true);
     });
 
     return () => {
@@ -188,6 +195,7 @@ export function AppProvider({ children }) {
   }, [currentUser]);
 
   const value = {
+    authReady,
     currentUser,
     setCurrentUser,
     isAuthenticated,

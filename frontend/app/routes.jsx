@@ -5,6 +5,7 @@ import AuthPage from './pages/AuthPage';
 import AdminAuthPage from './pages/AdminAuthPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import FeedPage from './pages/FeedPage';
+import CreatePostPage from './pages/CreatePostPage';
 import SinglePostPage from './pages/SinglePostPage';
 import CommunitiesPage from './pages/CommunitiesPage';
 import CommunityDetailPage from './pages/CommunityDetailPage';
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
     errorElement: <NotFoundPage />,
     children: [
       { index: true, Component: FeedPage },
+      { path: 'create-post', Component: CreatePostPage },
       { path: 'post/:id', Component: SinglePostPage },
       { path: 'communities', Component: CommunitiesPage },
       { path: 'communities/:id', Component: CommunityDetailPage },
